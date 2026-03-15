@@ -1,7 +1,7 @@
 # PowerShell script to stop all microservices
 # Run this script from the root directory E:\e-commerce-ms
 
-$ports = @(8761, 8081, 8084, 8082, 8083)
+$ports = @(8761, 8080, 8081, 8082, 8083)
 
 foreach ($port in $ports) {
     Write-Host "Stopping service on port $port..."
