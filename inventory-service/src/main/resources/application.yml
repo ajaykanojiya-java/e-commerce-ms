@@ -1,6 +1,6 @@
-
 server:
   port: 8082
+
 spring:
   application:
     name: inventory-service
@@ -11,13 +11,28 @@ spring:
     password:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+  traces:
+    baggage:
+      remote-fields: X-B3-TraceId,X-B3-SpanId,X-B3-ParentSpanId,X-B3-Sampled,X-B3-Flags
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
+
 resilience4j:
   circuitbreaker:
     instances:
       paymentService:
         slidingWindowSize: 5
         failureRateThreshold: 50
+
+logging:
+  level:
+    root: INFO
+    com.example: DEBUG
+    org.springframework.cloud.sleuth: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [%X{traceId:-},%X{spanId:-}] - %msg%n"
+  file:
+    name: logs/inventory-service.log

@@ -32,3 +32,13 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
+
+logging:
+  level:
+    root: INFO
+    com.example: DEBUG
+    org.springframework.cloud.sleuth: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [%X{traceId:-},%X{spanId:-}] - %msg%n"
+  file:
+    name: logs/api-gateway.log

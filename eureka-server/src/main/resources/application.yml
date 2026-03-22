@@ -1,8 +1,21 @@
-
 server:
   port: 8761
+
+spring:
+  application:
+    name: eureka-server
 
 eureka:
   client:
     register-with-eureka: false
     fetch-registry: false
+
+logging:
+  level:
+    root: INFO
+    com.example: DEBUG
+    org.springframework.cloud.sleuth: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [%X{traceId:-},%X{spanId:-}] - %msg%n"
+  file:
+    name: logs/eureka-server.log

@@ -6,7 +6,7 @@ This is a **Spring Boot microservices-based e-commerce application** demonstrati
 
 ### Technology Stack
 - **Framework**: Spring Boot 3.3.5
-- **Spring Cloud**: 2024.0.2
+- **Spring Cloud**: 2023.0.3 (Latest stable version compatible with Spring Boot 3.3.5)
 - **Java**: Version 21
 - **Build Tool**: Maven 3.6+ (with Maven Wrapper)
 - **Service Discovery**: Netflix Eureka
@@ -188,7 +188,7 @@ e-commerce-ms/
 ### Key Dependencies
 ```
 - spring-boot-starter-parent: 3.3.5 (inherited)
-- spring-cloud-dependencies: 2024.0.2 (BOM imported)
+- spring-cloud-dependencies: 2023.0.3 (BOM imported)
 - spring-cloud-starter-netflix-eureka-server (eureka-server)
 - spring-cloud-starter-gateway (apigateway)
 - spring-cloud-starter-openfeign (order-service, inventory-service)
@@ -565,10 +565,128 @@ When adding a new service to the architecture:
 
 ---
 
+## Distributed Log Tracing with Micrometer Tracing
+
+### Overview
+This project implements distributed log tracing using **Micrometer Tracing with Brave** bridge to track requests across microservices. Each request gets a unique **Trace ID** and each service call gets a unique **Span ID**.
+
+### Technology Used
+- **Micrometer Tracing**: OpenTelemetry standard tracing implementation
+- **Brave Bridge**: OpenZipkin Brave bridge for distributed tracing
+- **Spring Cloud Sleuth**: Integrated into Spring Boot 3.3.5 via Micrometer
+
+### Dependencies Added
+All modules now include:
+```xml
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-tracing-bridge-brave</artifactId>
+</dependency>
+```
+
+### Log Pattern Configuration
+Each service's `application.yml` includes tracing log pattern:
+```yaml
+logging:
+  level:
+    root: INFO
+    com.example: DEBUG
+    org.springframework.cloud.sleuth: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [%X{traceId},%X{spanId}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [%X{traceId},%X{spanId}] - %msg%n"
+  file:
+    name: logs/{service-name}.log
+```
+
+### Tracing Utility Classes
+Each service includes a `TracingUtil` class for consistent logging with trace IDs:
+- **Package**: `com.example.{service}.util.TracingUtil`
+- **Methods**:
+  - `logInfo(serviceName, operation, message)` - Info level with trace context
+  - `logDebug(serviceName, operation, message)` - Debug level with trace context
+  - `logError(serviceName, operation, message, exception)` - Error level with exception
+
+### Usage Example
+```java
+@Autowired
+private TracingUtil tracingUtil;
+
+public String placeOrder(@PathVariable String productId) {
+    // Log with automatic trace ID and span ID
+    tracingUtil.logInfo("ORDER-SERVICE", "placeOrder", 
+        "Processing order for productId: " + productId);
+    
+    int stock = inventoryClient.getStock(productId);
+    tracingUtil.logDebug("ORDER-SERVICE", "placeOrder", 
+        "Received stock: " + stock);
+    
+    if(stock > 0) {
+        tracingUtil.logInfo("ORDER-SERVICE", "placeOrder", 
+            "Order placed successfully");
+        return "Order placed";
+    }
+    return "Out of stock";
+}
+```
+
+### Log Output Example
+```
+2026-03-22 17:26:30.123 [main] INFO com.example.order.controller.OrderController - [4f1efc6e28e2e8c0,e1b8a4d5c9f3b2a1] - [ORDER-SERVICE] [placeOrder] Processing order for productId: 2
+2026-03-22 17:26:30.456 [main] DEBUG com.example.order.controller.OrderController - [4f1efc6e28e2e8c0,e1b8a4d5c9f3b2a1] - [ORDER-SERVICE] [placeOrder] Received stock: 10
+2026-03-22 17:26:30.789 [main] INFO com.example.order.controller.OrderController - [4f1efc6e28e2e8c0,e1b8a4d5c9f3b2a1] - [ORDER-SERVICE] [placeOrder] Order placed successfully
+```
+
+### Trace Flow Across Services
+When tracing is enabled, the same Trace ID flows through all services:
+```
+Client Request
+  ↓
+API Gateway (Trace ID: 4f1efc6e28e2e8c0, Span ID: e1b8a4d5c9f3b2a1)
+  ↓
+Order Service (Same Trace ID: 4f1efc6e28e2e8c0, New Span ID: d4c7a5f2b9e1c8d3)
+  ↓
+Inventory Service (Same Trace ID: 4f1efc6e28e2e8c0, New Span ID: a9e3b6f1c2d5a7e4)
+  ↓
+Payment Service (Same Trace ID: 4f1efc6e28e2e8c0, New Span ID: c8d2e5a7f1b3d4a6)
+```
+
+### Benefits
+1. **Request Correlation**: Track a single request across all services
+2. **Performance Debugging**: Identify slow services in the call chain
+3. **Error Investigation**: Quickly find which service caused the issue
+4. **Operational Visibility**: Understand service interaction patterns
+5. **Load Tracking**: Monitor which requests are heavy
+
+### Log File Locations
+- Eureka Server: `logs/eureka-server.log`
+- API Gateway: `logs/api-gateway.log`
+- Order Service: `logs/order-service.log`
+- Inventory Service: `logs/inventory-service.log`
+- Payment Service: `logs/payment-service.log`
+
+### Viewing Trace IDs
+When services are running, check logs to correlate requests:
+```powershell
+# View traces in real-time
+Get-Content -Path logs/order-service.log -Tail 10 -Wait
+
+# Search for specific trace ID
+Select-String -Path logs/*.log -Pattern "4f1efc6e28e2e8c0"
+```
+
+### Limitations & Future Enhancements
+- **Current**: Console + File logging with trace IDs
+- **Future**: Integration with Jaeger, Zipkin, or Datadog for centralized tracing
+- **Note**: Trace IDs are not persisted; they're generated per request
+
+---
+
 ## Version History
 
-- **v1.2** (Current): Upgraded to Spring Boot 3.3.5, Spring Cloud 2024.0.2 (latest stable versions with Java 21)
-- **v1.1**: Upgraded to Java 21, Spring Cloud 2023.0.3 (stable patch)
+- **v1.2.1** (Current): Spring Boot 3.3.5 with Spring Cloud 2023.0.3 (latest stable compatible), Java 21, Distributed Tracing with Micrometer
+- **v1.2**: Attempted Spring Boot 3.3.5 + Spring Cloud 2024.0.2 (incompatibility issues)
+- **v1.1**: Java 21 + Spring Cloud 2023.0.3 (stable patch)
 - **v1.0**: Initial microservices architecture with 5 services, Eureka discovery, API Gateway, Feign clients, and Resilience4j circuit breakers
 - **Optimizations**: Centralized dependency management in root POM, eliminated duplication across all modules
 
