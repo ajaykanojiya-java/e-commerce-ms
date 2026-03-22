@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -15,33 +14,8 @@
   <groupId>com.example</groupId>
   <artifactId>eureka-server</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-
-  <properties>
-	<java.version>17</java.version>
-	<spring-cloud.version>2023.0.0</spring-cloud.version>
-  </properties>
-
-  <dependencyManagement>
-	<dependencies>
-	  <!-- Keep Spring Boot dependency management so versions remain consistent -->
-	  <dependency>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-dependencies</artifactId>
-		<version>3.2.0</version>
-		<type>pom</type>
-		<scope>import</scope>
-	  </dependency>
-
-	  <!-- Existing Spring Cloud BOM (imported) -->
-	  <dependency>
-		<groupId>org.springframework.cloud</groupId>
-		<artifactId>spring-cloud-dependencies</artifactId>
-		<version>${spring-cloud.version}</version>
-		<type>pom</type>
-		<scope>import</scope>
-	  </dependency>
-	</dependencies>
-  </dependencyManagement>
+  <name>Eureka Server</name>
+  <description>Service Registry using Netflix Eureka</description>
 
   <dependencies>
 	<dependency>
@@ -49,5 +23,14 @@
 	  <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
 	</dependency>
   </dependencies>
+
+  <build>
+	<plugins>
+	  <plugin>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-maven-plugin</artifactId>
+	  </plugin>
+	</plugins>
+  </build>
 
 </project>
